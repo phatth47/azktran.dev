@@ -1,0 +1,121 @@
+---
+title: Mastering GitFlow in Project Management
+date: '2024-03-26'
+tags: ['git', 'gitflow', 'development']
+draft: false
+summary: This blog explores our team's adoption of GitFlow, highlighting the pivotal moments from our initial implementation to overcoming challenges and celebrating our successes. Discover how GitFlow revolutionized our project management, offering insights, lessons, and tips for anyone looking to enhance their development workflow
+---
+
+## Introduction
+
+In the fast-paced world of software development, maintaining a clear and efficient workflow is paramount. We embraced the GitFlow workflow as our branching strategy, aiming to streamline our development processes, improve collaboration, and ensure a seamless deployment cycle. This blog post delves into our journey, from the initial setup to managing features, releases, and hotfixes, providing insights into how GitFlow has become integral to our project management success.
+
+## The Genesis of GitFlow
+
+The decision to adopt GitFlow was driven by our need for a standardized process that could accommodate the complexities of developing and releasing our banking software. GitFlow offered us a robust framework to manage our features, fixes, and releases across different stages of the development lifecycle.
+
+### Pull Request naming convention
+
+We established a clear naming convention for pull requests to ensure consistency and ease of tracking:
+
+```
+# Feature
+# [WIP] is optional, just needed when you haven't not finalize ticket but need to create PR to review early or track change.
+Feature Branches: feature/feol-{ticket_id}_[{ticket_status}]_[WIP]_{feature_name}
+
+Example: feature/feol-1[in_review]_[CASA]_add_casa_journey
+
+# Hotfix
+# `feol-{ticket_id}` `[ticket_status]` is optional, just needed when having ticket.
+Hotfix Branches: hotfix/feol-{ticket_id}_[ticket_status]_{hotfix_name}
+
+Example: hotfix/wording_cta_feeback
+         hotfix/feol-1[in_review]_wrong_design_home
+
+# Release
+Release Branches: release/vx.y.z
+
+Example: release/20230714
+```
+
+### Branch Strategy
+Our branch strategy centered around the core principles of GitFlow, incorporating feature branches `feat/feol..`, develop branches `develop`, and master branches `master` to manage the development and release of new features, bug fixes, and updates.
+
+## Implementing Features and Handling Releases
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+![Implementing Features and Handling Releases](/static/images/gitflow/feature_release.svg)
+</div>
+
+### Feature Workflow
+For new features, we followed a structured flow:
+
+1. Create a feature branch `feature/feol-xxx-Implement-feature-A` from `master` 
+```bash
+git fetch && git checkout master && git reset origin/master --hard
+git checkout -b "feature/feol-xxx-Implement-feature-A" 
+```
+
+2. Regular commits to the feature branch until the feature was complete.
+```bash
+git commit -am "feat: :zap: do sth"
+```
+3. Creation of pull requests to `master`, and `develop` branches for review.
+4. Check status of Pull Request 
+
+- #### PR has been Rejected. Back to step 2
+- #### PR has been Approved
+  - Merge code from `feature/feol-xxx-Implement-feature-A` into `develop` branch.
+  - If conflict, checkout to `develop`, merge branch `feature/feol-xxx-Implement-feature-A` into `develop` locally then resolve conflict, ask people who change the files when resolving. Finally push `develop` to remote. 
+  - ***REMEMBER THAT: DO NOT PULL FROM*** `develop` into `feature/feol-xxx-Implement-feature-A`.
+  ```bash
+  git checkout develop && git fetch && git reset origin/develop --hard
+  git merge origin feature/feol-xxx-Implement-feature-A
+  ... resolve conflit ...
+  git commit -am "fix: :zap: resolve conflict"
+  git push origin develop
+  ```
+
+5. If pass UAT, create a pull request to next release branch, add release milestone to it.
+
+***Please note that we do not merge the PR to `master`. This pull request is used for review changes from the `master` branch and keep track conversation, this pull request will auto merge when the release pull request merged***
+
+
+### Release Management
+
+Releases were carefully managed through dedicated release branches created from the master. These branches underwent thorough testing in our UAT environment before being merged back into the master and develop branches for production deployment.
+
+1. Create a release branch `release/vx.y.z` from `master`
+```bash
+git fetch && git checkout master && git reset origin/master --hard && git checkout -b "release/vx.y.z"
+git request-pull origin/master ./ | grep -i cu-
+```
+
+2. Deploy branch `release/vx.y.z` to uat.
+
+3. Ask QC to verify all the ticket. If pass, go to step 6.
+
+4. If failed, checkout branch `hotfix/fix-...` from `release/vx.y.z` a branch, fix and create PR to `release/vx.y.z`. Then go to step 3.
+
+5. Update `CHANGELOG.md`, bump verison then commit, create git tag with version
+```
+git commit -am "bump version"
+git tag -f -a v$(cat VERSION) -m ""
+git push origin --tags
+```
+
+6. Merge `release/vx.y.z` to `master` and `develop` then deploy master and prod server.
+
+## Navigating Hotfixes with Precision
+
+Hotfixes required swift action and were handled by branching directly from the master to address critical issues affecting our production environment. Once resolved, these fixes were merged into both the master and develop branches to ensure consistency across our codebase.
+
+## Lessons Learned and Best Practices
+Adopting GitFlow has been a transformative experience for **OnPoint E-Commerce**, bringing about significant improvements in our project management and deployment processes. Among the key takeaways:
+
+- **Consistency Is Key**: Standardizing branch naming and workflows has simplified our development process and improved collaboration among team members.
+- **Flexibility in Workflow**: GitFlow accommodates various project sizes and complexities, providing the flexibility needed to adapt to changing project requirements.
+- **Enhanced Release Management**: The clear separation between development and release branches has facilitated smoother and more predictable releases.
+
+## Conclusion
+The implementation of GitFlow has not only streamlined our development workflow but also enhanced the quality and reliability of our software releases. By sharing our journey, we hope to offer valuable insights into how other teams can leverage GitFlow to achieve similar successes in their projects.

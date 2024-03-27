@@ -1,0 +1,182 @@
+---
+title: Setting up multiple environments in Flutter with Flavors
+date: '2024-03-03'
+tags: ['flutter', 'environment']
+draft: false
+summary: This blog post provides a comprehensive guide on configuring Flutter flavors to differentiate between development (DEV), (UAT) and live (LIVE) environments for apps targeting iOS and Android.
+---
+
+I’m using Flutter `v3.13.0` for this tutorial.
+
+## Add a Flutter build configuration for each flavor in Android Studio
+
+We want to have three flavors called `dev`, `uat` and `live`.
+
+If you want to launch a flutter app with a flavor, you have to use the `flutter run --flavor <env>` parameter in the Flutter CLI. To automatically start the app with a flavor in Android Studio we need to change the build configurations:
+- Find `main.dart` in the Android Studio top toolbar and select Edit Configurations.... This opens the “Run/Debug Configurations” window.
+- Change the Name: field to `dev`
+- For Build flavor: set `dev` as well.
+- Make sure “Share through VCS” is selected.
+- Copy the dev configuration (It’s an icon in the top left of the window)
+- Change the Name: and Build flavor: values to `uat` and `live`
+- Make sure “Share through VCS” is selected as well
+- Close the dialog. Instead of `main.dart`, it will now display `dev` in the top toolbar.
+
+*IMPORTANT: Flavor names may not start with `test` as that’s not allowed by Android.*
+
+## Setup falvors for Android
+
+### Add the method channel in Android code
+
+When the app starts, Flutter needs a way to ask the native platform which flavor it has been started with. To communicate with native code, Flutter uses `method channels`.
+
+Go to `android/app/src/main/kotlin/com/andy/cookify/cookify/MainActivity.kt` and replace everything except the first line (the package import) with the following code. This will set up the method channel that returns the BuildConfig.FLAVOR value, which is a built-in value of Android.
+
+```kotlin
+package com.andy.cookify.cookify
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity: FlutterActivity() {
+    override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+        GeneratedPluginRegistrant.registerWith(flutterEngine);
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "flavor").setMethodCallHandler {
+                call, result -> result.success(BuildConfig.FLAVOR)
+        }
+    }
+}
+```
+
+### Add the flavor-settings to the Android build config
+
+In Android, the native flavor-specific values are stored in `android/app/src/build.gradle` via the `android.flavorDimensions` and `android.productFlavors` keys.
+
+We’ll use these keys to set up the flavor-specific applicationId and the flavor-specific display name for the app. This is important because we want to be able to have both flavors of the app installed at the same time.
+
+The applicationId is the unique app id for each flavor in the Google Play store. Once deployed to Google Play, this can not be changed anymore!
+
+Therefore, add the following two things within the android `{ ... }` section:
+
+```
+android {
+    // ... all existing things like `sourceSets`, ...
+
+    flavorDimensions "app"
+
+    productFlavors {
+        dev {
+            dimension "app"
+            applicationId "com.andy.cookify.dev"
+            resValue "string", "app_name", "DEV Cookify"
+        }
+        uat {
+            dimension "app"
+            applicationId "com.andy.cookify.uat"
+            resValue "string", "app_name", "UAT Cookify"
+        }
+        live {
+            dimension "app"
+            applicationId "com.andy.cookify"
+            resValue "string", "app_name", "Cookify"
+        }
+    }
+}
+```
+
+### Adjust the app_name in the AndroidManifest.xml
+
+Open `android/app/src/main/AndroidManifest.xml`
+
+Replace the `<application android:label="cookify"/>` with `<application android:label="@string/app_name"/>`
+
+## Setup flavors for iOS
+
+Make sure you enrolled `Apple Developer Program` to run app on physical devices.
+
+Unfortunately, setting up flavors in iOS is more complex and we’ll have to use XCode and its UI for most of the steps. 
+
+Let’s try building our app with a flavor for iOS now to see, what kind of error we get:
+```
+flutter build ios --flavor dev
+
+The Xcode project does not define custom schemes. You cannot use the --flavor option.
+```
+
+This means, that on iOS we have to rely on a feature called “custom schemes” to represent our flutter flavors. Setting them up requires multiple steps.
+
+### Setup Configurations
+Make sure the root `Runner` node is selected in XCode
+
+In the main window, select the `Runner` node below `PROJECT` (NOT below TARGETS)
+
+Select the `Info` tab
+
+In the `Configurations` section, do the following:
+- Rename `Debug` to `Debug-dev`
+- Rename `Release` to `Release-dev`
+- Rename `Profile` to `Profile-dev`
+- Duplicate `Debug-dev` and rename it to `Debug-uat`
+- Duplicate `Release-dev` and rename it to `Release-uat`
+- Duplicate `Profile-dev` and rename it to `Profile-uat`
+- Duplicate `Debug-dev` and rename it to `Debug-live`
+- Duplicate `Release-dev` and rename it to `Release-live`
+- Duplicate `Profile-dev` and rename it to `Profile-live`
+- This means, for every flavor, we need a separate `Debug`, `Release` & `Profile` configuration.
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![Configurations](/static/images/flavors/ios_setup_configuration.png)
+</div>
+
+### Assign Build Configurations to Custom Schemes
+Now we can set up the actual `custom schemes` by doing the following:
+
+- Make sure the root `Runner` node is selected in XCode
+- Select `Product -> Scheme -> Manage Schemes…` in the main toolbar.
+- To setup the `dev` scheme:
+  - Select the `Runner` scheme, click on the settings-icon in the top left and select `Duplicate`
+  - Rename the scheme to `dev`
+  - Make sure `Shared` is selected
+  - Adjust the build configuration to the corresponding `-dev` version
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![dev Scheme](/static/images/flavors/ios_scheme_dev.png)
+</div>
+
+- Similar 
+
+- To setup the “live” scheme:
+  - Select the “Runner” scheme again, click on the settings-icon in the top left and select “Duplicate”
+  - Rename the scheme to “live”
+  - For each of the sections (“Run”, “Test”, “Profile”, “Analyze”, “Archive”) on the left, change the build configuration to the corresponding “-live” version.
+  - Make sure “Shared” is selected
+  - Close the dialog
+
+#### Result
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![Manages Schemes](/static/images/flavors/ios_create_scheme.png)
+</div>
+
+## Code Blocks
+
+Some Javascript code
+
+```javascript
+var num1, num2, sum
+num1 = prompt('Enter first number')
+num2 = prompt('Enter second number')
+sum = parseInt(num1) + parseInt(num2) // "+" means "add"
+alert('Sum = ' + sum) // "+" means combine into a string
+```
+
+Some Python code 🐍
+
+```python
+def fib():
+    a, b = 0, 1
+    while True:            # First iteration:
+        yield a            # yield 0 to start with and then
+        a, b = b, a + b    # a will now be 1, and b will also be 1, (0 + 1)
+
+for index, fibonacci_number in zip(range(10), fib()):
+     print('{i:3}: {f:3}'.format(i=index, f=fibonacci_number))
+```

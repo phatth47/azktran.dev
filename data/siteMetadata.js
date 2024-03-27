@@ -3,7 +3,7 @@ const siteMetadata = {
   title: 'AzkTran',
   author: 'Phat Tran',
   headerTitle: 'AzkTran',
-  description: 'Welcome to my blog. I write about web development, programming, and life.',
+  description: 'Welcome to my blog. I write about mobile development, programming, and life.',
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://tailwind-nextjs-starter-blog.vercel.app',
