@@ -1,0 +1,188 @@
+---
+title: Setting up Multiple environments in Flutter with Flavors - Android
+date: '2024-04-03'
+tags: ['flutter', 'environment']
+draft: false
+summary: This blog post provides a comprehensive guide on configuring Flutter flavors to differentiate between development (DEV), (UAT) and live (LIVE) environments for apps targeting Android.
+---
+
+I’m using Flutter `v3.13.0` for this tutorial.
+
+## Add a Flutter build configuration for each flavor in Android Studio
+
+We want to have three flavors called `dev`, `uat` and `live`.
+
+If you want to launch a flutter app with a flavor, you have to use the `flutter run --flavor <env>` parameter in the Flutter CLI. To automatically start the app with a flavor in Android Studio we need to change the build configurations:
+- Find `main.dart` in the **Android Studio** top toolbar and select **Edit Configurations**.... This opens the **Run/Debug Configurations** window.
+- Change the Name field to `dev`
+- For Build flavor: set `dev` as well.
+- Duplicate the dev configuration (It’s an icon in the top left of the window)
+- Change the `Name` and `Build flavor` values to `uat` and `live`
+- Close the dialog. Instead of `main.dart`, it will now display `dev` in the top toolbar.
+
+***IMPORTANT: Flavor names may not start with `test` as that’s not allowed by Android.***
+
+## Setup flavors for Android
+
+### Add the flavor-settings to the Android build config
+
+In Android, the native flavor-specific values are stored in `android/app/src/build.gradle` via the `android.flavorDimensions` and `android.productFlavors` keys.
+
+We’ll use these keys to set up the flavor-specific applicationId and the flavor-specific display name for the app. This is important because we want to be able to have both flavors of the app installed at the same time.
+
+The applicationId is the unique app id for each flavor in the Google Play store. Once deployed to Google Play, this can not be changed anymore!
+
+Therefore, add the following two things within the android `{ ... }` section:
+
+```
+android {
+    // ... all existing things like `sourceSets`, ...
+
+    flavorDimensions "app"
+
+    productFlavors {
+        dev {
+            dimension "app"
+            applicationId "com.andy.cookify.dev"
+            resValue "string", "app_name", "DEV Cookify"
+        }
+        uat {
+            dimension "app"
+            applicationId "com.andy.cookify.uat"
+            resValue "string", "app_name", "UAT Cookify"
+        }
+        live {
+            dimension "app"
+            applicationId "com.andy.cookify"
+            resValue "string", "app_name", "Cookify"
+        }
+    }
+}
+```
+
+### Add the method channel in Android code
+
+When the app starts, Flutter needs a way to ask the native platform which flavor it has been started with. To communicate with native code, Flutter uses `method channels`.
+
+Go to `android/app/src/main/kotlin/<your>/<application>/<id>/MainActivity.kt` and replace everything except the first line (the package import) with the following code. This will set up the method channel that returns the BuildConfig.FLAVOR value, which is a built-in value of Android.
+
+```kotlin
+import androidx.annotation.NonNull;
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugins.GeneratedPluginRegistrant
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity: FlutterActivity() {
+    override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+        GeneratedPluginRegistrant.registerWith(flutterEngine);
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "flavor").setMethodCallHandler {
+                call, result -> result.success(BuildConfig.FLAVOR)
+        }
+    }
+}
+```
+
+### Adjust the App Name in the AndroidManifest.xml
+
+Open `android/app/src/main/AndroidManifest.xml`
+
+Replace the `<application android:label="<old_app_name>"/>` with `<application android:label="@string/app_name"/>`
+
+### Setting App Icon 
+
+Use [Icon Finder](https://www.iconfinder.com/) or [App Icon](https://appicon.co/) to generate App Icon. And place folder following: 
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![InfoPlist](/static/images/flavors/android_app_icon.png)
+</div>
+
+## Get the Flavor in Flutter Project
+
+As described in our requirements, we want to target different API endpoints per flavor so we need a way to get the current flavor in our Flutter code.
+
+We’ll first add a class called `AppFlavor` in a new file called `lib/app_flavor.dart` that will hold all of our flavor-specific settings that we only need in our Flutter code:
+
+```dart
+enum AppEnvironment { dev, uat, live }
+
+class AppFlavor {
+  static AppEnvironment environment = AppEnvironment.dev;
+  static String apiBaseUrl = 'https://api-dev.cookify.io';
+
+  static void setEnvironment(AppEnvironment env) {
+    switch (env) {
+      case AppEnvironment.dev:
+        environment = AppEnvironment.dev;
+        apiBaseUrl = 'https://api-dev.cookify.io';
+        break;
+      case AppEnvironment.uat:
+        environment = AppEnvironment.uat;
+        apiBaseUrl = 'https://api-uat.cookify.io';
+        break;
+      case AppEnvironment.live:
+        environment = AppEnvironment.live;
+        apiBaseUrl = 'https://api.cookify.io';
+        break;
+    }
+  }
+}
+
+class AppFlavorHelper {
+  static Future<AppEnvironment> getEnvironment() async {
+    String? flavor =
+        await const MethodChannel('flavor').invokeMethod<String>('getFlavor');
+
+    print('STARTED WITH FLAVOR $flavor');
+
+    switch (flavor) {
+      case 'dev':
+        return AppEnvironment.dev;
+      case 'uat':
+        return AppEnvironment.uat;
+      case 'live':
+        return AppEnvironment.live;
+      default:
+        return AppEnvironment.dev;
+    }
+  }
+}
+```
+
+Next, we’ll use this in `main.dart`, where we’ll read the flavor via our method channel from the native platform and we’ll create the corresponding `FlavorConfig`. We’ll also have to make our main-method async for that.
+
+When done, your `main.dart` as following:
+```dart
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final environment = await AppFlavorHelper.getEnvironment();
+  AppFlavor.setEnvironment(environment);
+
+  runApp(const MyApp());
+}
+
+// ... class MyApp extends StatelessWidget {
+```
+
+## Run the Android app
+You can use these command-line or use **Android Studio** to build with build configurations
+```bash
+flutter run --flavor dev
+flutter run --flavor uat
+flutter run --flavor live
+```
+
+Now, launch the app in Android Studio with the `dev` build configuration.
+
+Close the app in the device and check your application list, the app name will now display `DEV Cookify`!
+
+Stop the app in Android Studio, change the build configuration to `uat` or `live` and launch the app again.
+
+You’ll now have all flavors of your app installed on your Android device!
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![Android Run App](/static/images/flavors/android_run.JPG)
+</div>

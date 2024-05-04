@@ -1,0 +1,197 @@
+---
+title: Setting up Multiple environments in Flutter with Flavors - iOS
+date: '2024-04-04'
+tags: ['flutter', 'environment']
+draft: false
+summary: This blog post provides a comprehensive guide on configuring Flutter flavors to differentiate between development (DEV), (UAT) and live (LIVE) environments for apps targeting iOS.
+---
+
+I’m using Flutter `v3.13.0` for this tutorial.
+
+## Setup flavors for iOS
+
+Make sure you enrolled `Apple Developer Program` to run app on physical devices.
+
+Unfortunately, setting up flavors in iOS is more complex and we’ll have to use XCode and its UI for most of the steps. 
+
+Let’s try building our app with a flavor for iOS now to see, what kind of error we get:
+```
+flutter build ios --flavor dev
+
+The Xcode project does not define custom schemes. You cannot use the --flavor option.
+```
+
+This means, that on iOS we have to rely on a feature called “custom schemes” to represent our flutter flavors. Setting them up requires multiple steps.
+
+### Setup Configurations
+Make sure the root `Runner` node is selected in XCode
+
+In the main window, select the `Runner` node below `PROJECT` (NOT below TARGETS)
+
+Select the `Info` tab
+
+In the `Configurations` section, do the following:
+- Rename `Debug` to `Debug-dev`
+- Rename `Release` to `Release-dev`
+- Rename `Profile` to `Profile-dev`
+- Duplicate `Debug-dev` and rename it to `Debug-uat`
+- Duplicate `Release-dev` and rename it to `Release-uat`
+- Duplicate `Profile-dev` and rename it to `Profile-uat`
+- Duplicate `Debug-dev` and rename it to `Debug-live`
+- Duplicate `Release-dev` and rename it to `Release-live`
+- Duplicate `Profile-dev` and rename it to `Profile-live`
+- This means, for every flavor, we need a separate `Debug`, `Release` & `Profile` configuration.
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![Configurations](/static/images/flavors/ios_setup_configuration.png)
+</div>
+
+### Assign Build Configurations to Custom Schemes
+Now we can set up the actual `custom schemes` by doing the following:
+
+- Make sure the root `Runner` node is selected in XCode
+- Select `Product -> Scheme -> Manage Schemes…` in the main toolbar.
+- To setup the `dev` scheme:
+  - Select the `Runner` scheme, click on the settings-icon in the top left and select `Duplicate`
+  - Rename the scheme to `dev`
+  - Make sure `Shared` is selected
+  - Adjust the build configuration to the corresponding `-dev` version
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![dev Scheme](/static/images/flavors/ios_scheme_dev.png)
+</div>
+
+- Similar to setup the `uat` and `live` scheme:
+  - Select the `Runner` scheme again, click on the settings-icon in the top left and select `Duplicate`
+  - Rename the scheme to `live`
+  - For each of the sections (`Run`, `Test`, `Profile`, `Analyze`, `Archive`) on the left, change the build configuration to the corresponding `-uat` and `-live` version.
+  - Make sure `Shared` is selected
+  - Close the dialog
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![Manages Schemes](/static/images/flavors/ios_create_scheme.png)
+</div>
+
+### Setup Flavor value per scheme
+
+The `Bundle.main.infoDictionary` from before refers to the `Runner/Info.plist` file and `App - Flavor` is a custom key that we have to add there manually next.
+
+So open the `Runner/Info.plist` file in **XCode** and and add a new row with the following settings:
+
+- Key: `App - Flavor`
+- Type: `String`
+- Value: `$(APP_FLAVOR)`
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![InfoPlist](/static/images/flavors/ios_setup_info.png)
+</div>
+
+We now have the key but we still don’t have the actual flavor-specific values per scheme. To add them, we now have to do the following:
+
+- Select the root `Runner` node in your **XCode** project structure
+- Select `Runner` below `TARGETS`
+- Select the `Build settings` tab
+- Click on the + to add a new `User-defined` setting
+- Name it `APP_FLAVOR`
+- Expand the node by clicking on the little arrow on the left of the row and add the actual flavor value to each build configuration:
+  - **Debug-dev**: `dev`
+  - **Debug-uat**: `uat`
+  - **Debug-live**: `live`
+  - **Profile-dev**: `dev`
+  - **Profile-uat**: `uat`
+  - **Profile-live**: `live`
+  - **Release-dev**: `dev`
+  - **Release-uat**: `uat`
+  - **Release-live**: `live`
+
+When done, it should look like this:
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![InfoPlist](/static/images/flavors/ios_setup_flavor.png)
+</div>
+
+### Setup App Name value per scheme
+
+So open the `Runner/Info.plist` file in **XCode** and and modify `Bundle display name` with the following settings:
+
+- Key: `Bundle display name`
+- Type: `String`
+- Value: `$(APP_NAME)`
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![App Name](/static/images/flavors/ios_setup_info_appname.png)
+</div>
+
+We now have the key but we still don’t have the actual flavor-specific values per scheme. To add them, we now have to do the following:
+
+- Select the root `Runner` node in your **XCode** project structure
+- Select `Runner` below `TARGETS`
+- Select the `Build settings` tab
+- Click on the + to add a new `User-defined` setting
+- Name it `APP_NAME`
+- Expand the node by clicking on the little arrow on the left of the row and add the actual flavor value to each build configuration:
+  - **Debug-dev**: `DEV Cookify`
+  - **Debug-uat**: `UAT Cookify`
+  - **Debug-live**: `Cookify`
+  - **Profile-dev**: `DEV Cookify`
+  - **Profile-uat**: `UAT Cookify`
+  - **Profile-live**: `Cookify`
+  - **Release-dev**: `DEV Cookify`
+  - **Release-uat**: `UAT Cookify`
+  - **Release-live**: `Cookify`
+
+When done, it should look like this:
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![App Name](/static/images/flavors/ios_setup_appname.png)
+</div>
+
+### Setup Bundle Identifier value per scheme
+
+- At the `Build Settings` tab
+- Search `Product Bundle` 
+- Expand the node `Product Bundle Identifier` and modify actual `Bundle ID` value to each build configuration:
+  - **Debug-dev**: `com.andy.cookify.dev`
+  - **Debug-uat**: `com.andy.cookify.uat`
+  - **Debug-live**: `com.andy.cookify`
+  - **Profile-dev**: `com.andy.cookify.dev`
+  - **Profile-uat**: `com.andy.cookify.uat`
+  - **Profile-live**: `com.andy.cookify`
+  - **Release-dev**: `com.andy.cookify.dev`
+  - **Release-uat**: `com.andy.cookify.uat`
+  - **Release-live**: `com.andy.cookify`
+
+<div className="-mx-2 flex flex-wrap overflow-hidden xl:-mx-2">
+  ![BundleID](/static/images/flavors/ios_setup_bundle.png)
+</div>
+
+### Adding the method channel for iOS
+
+We need to add some code to the `Runner/AppDelegate.swift` in **XCode**. The finished file should look like this:
+```swift
+import UIKit
+import Flutter
+
+@UIApplicationMain
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    GeneratedPluginRegistrant.register(with: self)
+
+    let controller = window.rootViewController as! FlutterViewController
+
+    let flavorChannel = FlutterMethodChannel(
+        name: "flavor",
+        binaryMessenger: controller.binaryMessenger)
+
+    flavorChannel.setMethodCallHandler({(call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+        // Note: this method is invoked on the UI thread
+        let flavor = Bundle.main.infoDictionary?["App - Flavor"]
+        result(flavor)
+    })
+
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}
+```
+
+This will set up a method channel handler that reads the current flavor from a `Bundle.main.infoDictionary` with a key called `App - Flavor`.

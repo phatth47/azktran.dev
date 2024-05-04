@@ -1,8 +1,8 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: 'AzkTran',
-  author: 'Phat Tran',
-  headerTitle: 'AzkTran',
+  title: 'Andy Tran',
+  author: 'Andy Tran',
+  headerTitle: 'Andy Tran',
   description: 'Welcome to my blog. I write about mobile development, programming, and life.',
   language: 'en-us',
   theme: 'system', // system, dark or light
