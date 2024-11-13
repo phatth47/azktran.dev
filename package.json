@@ -11,9 +11,13 @@
     "lint": "next lint --fix --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts"
   },
   "dependencies": {
+    "@codemirror/lang-json": "^6.0.1",
     "@next/bundle-analyzer": "14.1.0",
     "@tailwindcss/forms": "^0.5.4",
     "@tailwindcss/typography": "^0.5.9",
+    "@uiw/codemirror-theme-dracula": "^4.23.6",
+    "@uiw/codemirror-theme-vscode": "^4.23.6",
+    "@uiw/react-codemirror": "^4.23.6",
     "autoprefixer": "^10.4.13",
     "clsx": "^2.1.0",
     "contentlayer": "0.3.4",
