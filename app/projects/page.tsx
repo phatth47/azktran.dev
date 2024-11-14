@@ -1,12 +1,12 @@
 import projectsData from '@/data/projectsData'
 import Card from '@/components/Card'
 import { genPageMetadata } from 'app/seo'
-import JsonToDartConverter from '@/components/JsonToDartConverter';
+import JsonToDartConverter from '@/components/JsonToDartConverter'
 
 export const metadata = genPageMetadata({ title: 'Projects' })
 
 export default function Projects() {
-  return <JsonToDartConverter />;
+  return <JsonToDartConverter />
   // return (
   //   <>
   //     <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -35,4 +35,3 @@ export default function Projects() {
   //   </>
   // )
 }
-
