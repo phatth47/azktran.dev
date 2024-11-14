@@ -34,7 +34,6 @@ export const JsonInput: React.FC<JsonInputProps> = ({
 
   useEffect(() => {
     setIsDarkMode(document.documentElement.classList.contains('dark'))
-    
     // Optional: Listen for theme changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -46,7 +45,7 @@ export const JsonInput: React.FC<JsonInputProps> = ({
 
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class']
+      attributeFilter: ['class'],
     })
 
     return () => observer.disconnect()
