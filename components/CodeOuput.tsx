@@ -35,7 +35,7 @@ const CodeLine: React.FC<{ content: string }> = ({ content }) => {
 
   // Handle imports
   if (remainingContent.startsWith('import')) {
-    const importMatch = remainingContent.match(/(import)(\s+)(['"][^'"]+['"])(?)/)
+    const importMatch = remainingContent.match(/(import)(\s+)(['"][^'"]+['"])(;?)/)
     if (importMatch) {
       const [_, importKw, space, path, semicolon] = importMatch
       addStyledText(importKw, 'text-purple-600')
@@ -59,7 +59,7 @@ const CodeLine: React.FC<{ content: string }> = ({ content }) => {
   }
 
   // Handle properties with type
-  const propertyMatch = remainingContent.match(/(final\s+)(\w+(?:<[^>]+>)?)(\s+\w+)(?)/)
+  const propertyMatch = remainingContent.match(/(final\s+)(\w+(?:<[^>]+>)?)(\s+\w+)(;?)/)
   if (propertyMatch) {
     const [_, modifier, type, name, semicolon] = propertyMatch
     addStyledText(modifier, 'text-purple-600')

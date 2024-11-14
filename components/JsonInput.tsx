@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import { dracula } from '@uiw/codemirror-theme-dracula'
@@ -30,6 +30,28 @@ export const JsonInput: React.FC<JsonInputProps> = ({
   onJsonInputChange,
   onGenerate,
 }) => {
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  useEffect(() => {
+    setIsDarkMode(document.documentElement.classList.contains('dark'))
+    
+    // Optional: Listen for theme changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDarkMode(document.documentElement.classList.contains('dark'))
+        }
+      })
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
   const handleFormat = () => {
     try {
       const formatted = formatJson(jsonInput)
@@ -83,7 +105,7 @@ export const JsonInput: React.FC<JsonInputProps> = ({
             <CodeMirror
               value={jsonInput}
               height="400px"
-              theme={document.documentElement.classList.contains('dark') ? vscodeDark : undefined}
+              theme={isDarkMode ? vscodeDark : undefined}
               extensions={[json()]}
               onChange={onJsonInputChange}
               basicSetup={{
